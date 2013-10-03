@@ -19,7 +19,7 @@ class Entity{
   void setPosition(const float& arga, const float& argb);//BIND
   float getX();//BIND
   float getY();
-
+  void voidfunc();//BIND
 };
 
 

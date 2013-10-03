@@ -43,7 +43,6 @@ function processClass(input)
 end
 
 function processArgs(input)
-	print ("Analizando los argumentos: " .. input)
 	local output = {}
 	local b = 0
 	local c = 0
@@ -63,7 +62,7 @@ function processArgs(input)
 			a,b, argtype = string.find(members[i],"%s*(%S-)$",b+1)
 		end
 		if b == nil then print "Error reading argument"; break; end
-		print(argtype)
+
 		output[order] = argtype
 		order = order + 1
 	end
@@ -108,16 +107,29 @@ function writeBindingFunctions(classData)
 	
 	local functionBlock = ""
 	
-	for methodName, methodTable in pairs(ClassData.methods) do
+	for methodName, methodTable in pairs(classData.methods) do
 		if methodTable.returnType == "void" then
 			if #methodTable == 0 then
-				functionBlock = functionBlock .. bindingClassName .. "_" methodName .. "(lua_State* L){/n" ..
-						bindingClassName .. "::getInstance(L)->" .. methodName .. "();/nreturn0;/n}"
+				functionBlock = functionBlock .. bindingClassName .. "_" .. methodName .. "(lua_State* L){\n" .. bindingClassName .. "::getInstance(L)->" .. methodName .. "();\nreturn 0;\n}\n\n"
+			else 
+				functionBlock = functionBlock .. bindingClassName .. "_" .. methodName .. "(lua_State* L){\n" .. bindingClassName .. "::getInstance(L)->" .. methodName .. "("
+				for i=1, #methodTable do					
+					if methodTable[i] == "float" or methodTable[i] == "int" or methodTable[i] == "double" then 
+						functionBlock = functionBlock .. "lua_tonumber(L," .. i .. ")"
+						
+					end
+					
+					if i ~= #methodTable then functionBlock = functionBlock .. ", " end
+				end
+				functionBlock = functionBlock .. ");\nreturn 0;\n}\n\n"
 			end
 		end
 	end
 
+	return functionBlock
 end
+
+print(writeBindingFunctions(out))
 
 --[[--Debug
 
