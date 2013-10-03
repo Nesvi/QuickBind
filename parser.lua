@@ -91,6 +91,36 @@ end
 
 out = processClass(getInput())
 
+--[[
+*Now I must use this information to write the code of the bindings in c++!
+-The name of the output class is = [name of the binded class]LuaInterface
+-Every time I bind a method without parameters and return I make an equivalent function in c++ with the following structure:
+
+[name of the binded class]LuaInterface_[method name](lua_State* L){
+  [name of the binded class]LuaInterface::getInstance(L)->[method name]();
+  return 0;
+}
+]]--
+
+function writeBindingFunctions(classData)
+
+	local bindingClassName = classData.classname .. "LuaInterface"
+	
+	local functionBlock = ""
+	
+	for methodName, methodTable in pairs(ClassData.methods) do
+		if methodTable.returnType == "void" then
+			if #methodTable == 0 then
+				functionBlock = functionBlock .. bindingClassName .. "_" methodName .. "(lua_State* L){/n" ..
+						bindingClassName .. "::getInstance(L)->" .. methodName .. "();/nreturn0;/n}"
+			end
+		end
+	end
+
+end
+
+--[[--Debug
+
 function show(asdf,times)
 	local spaces = ""
 	for i=1,times do spaces = spaces.." " end
@@ -107,4 +137,5 @@ end
 
 show(out,0)
 
+]]--
 
