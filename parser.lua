@@ -1,3 +1,22 @@
+function split(str, pat)
+   local t = {}  -- NOTE: use {n = 0} in Lua-5.0
+   local fpat = "(.-)" .. pat
+   local last_end = 1
+   local s, e, cap = str:find(fpat, 1)
+   while s do
+      if s ~= 1 or cap ~= "" then
+	 table.insert(t,cap)
+      end
+      last_end = e+1
+      s, e, cap = str:find(fpat, last_end)
+   end
+   if last_end <= #str then
+      cap = str:sub(last_end)
+      table.insert(t, cap)
+   end
+   return t
+end
+
 function readAll(file)
     local f = io.open(file, "rb")
     local content = f:read("*all")
@@ -29,11 +48,26 @@ function processArgs(input)
 	local b = 0
 	local c = 0
 	local order = 1
+	local vartypes = {"void","int","float","string","char","char*"}
 	
 	--Limpieza de simbolos inútiles para lo que nos interesa
 	input = string.gsub(input, "const","")
-	input = string.gsub(input, "[,&]"," ")
+	input = string.gsub(input, "[&]"," ")
 	
+	members = split(input,",")
+
+	for i=1, #members do
+		b=0
+		a,b, argtype = string.find(members[i],"%s*(%S-)%s",b+1)
+		if b == nil then 
+			a,b, argtype = string.find(members[i],"%s*(%S-)$",b+1)
+		end
+		if b == nil then print "Error reading argument"; break; end
+		print(argtype)
+		output[order] = argtype
+		order = order + 1
+	end
+	--[[
 	while true do
 
 		a,b, argtype = string.find(input,"%s*(%S-)%s",b+1)
@@ -52,7 +86,7 @@ function processArgs(input)
 		output[order].vartype = argtype 
 		order = order + 1 
 	end
-	
+	]]--
 	return output
 	
 end
@@ -61,7 +95,7 @@ function processMethods(input)
 	local b=0
 	local output = {}
 	
-	vartypes = {"void","int","float","string","char","char*"}
+	local vartypes = {"void","int","float","string","char","char*"}
 	for i=1, #vartypes do
 		b= 0
 		while true do
