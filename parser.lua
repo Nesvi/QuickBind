@@ -1,5 +1,5 @@
 function split(str, pat)
-   local t = {}  -- NOTE: use {n = 0} in Lua-5.0
+   local t = {} 
    local fpat = "(.-)" .. pat
    local last_end = 1
    local s, e, cap = str:find(fpat, 1)
@@ -26,7 +26,7 @@ end
 
 function getInput()
 	--return "class clase{ void metodo(int agfd, int b); void metodosasdfasd(const int agreg, const int cgfd&);  }"
-	return readAll("Entity.h")
+	return readAll(arg[1])
 end
 
 function processClass(input)
@@ -50,7 +50,7 @@ function processArgs(input)
 	local order = 1
 	local vartypes = {"void","int","float","string","char","char*"}
 	
-	--Limpieza de simbolos inútiles para lo que nos interesa
+	--Clean useless symbols for this work
 	input = string.gsub(input, "const","")
 	input = string.gsub(input, "[&]"," ")
 	
@@ -67,26 +67,7 @@ function processArgs(input)
 		output[order] = argtype
 		order = order + 1
 	end
-	--[[
-	while true do
 
-		a,b, argtype = string.find(input,"%s*(%S-)%s",b+1)
-		if b == nil then break; end
-
-		a,c, argname = string.find(input,"%s*(%S-)%s",b+1) -- si lo que analizamos es tal que ....float a); no detecta a porque está pegada al )
-		if c == nil then 
-			a,c, argname = string.find(input,"%s*(%S-)$",b+1)
-		end
-
-		b = c
-		if b == nil then break; end
-
-		output[order] = {}
-		output[order].name = argname
-		output[order].vartype = argtype 
-		order = order + 1 
-	end
-	]]--
 	return output
 	
 end
