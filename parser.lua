@@ -101,7 +101,7 @@ out = processClass(getInput())
 }
 ]]--
 
-function writeBindingFunctions(classData)
+function writeMethodCFunctions(classData)
 
 	local bindingClassName = classData.classname .. "LuaInterface"
 	
@@ -110,9 +110,9 @@ function writeBindingFunctions(classData)
 	for methodName, methodTable in pairs(classData.methods) do
 		if methodTable.returnType == "void" then
 			if #methodTable == 0 then
-				functionBlock = functionBlock .. bindingClassName .. "_" .. methodName .. "(lua_State* L){\n" .. bindingClassName .. "::getInstance(L)->" .. methodName .. "();\nreturn 0;\n}\n\n"
+				functionBlock = functionBlock .. bindingClassName .. "_" .. methodName .. "(lua_State* L){\n\t" .. bindingClassName .. "::getInstance(L)->" .. methodName .. "();\n\treturn 0;\n}\n\n"
 			else 
-				functionBlock = functionBlock .. bindingClassName .. "_" .. methodName .. "(lua_State* L){\n" .. bindingClassName .. "::getInstance(L)->" .. methodName .. "("
+				functionBlock = functionBlock .. bindingClassName .. "_" .. methodName .. "(lua_State* L){\n\t" .. bindingClassName .. "::getInstance(L)->" .. methodName .. "("
 				for i=1, #methodTable do					
 					if methodTable[i] == "float" or methodTable[i] == "int" or methodTable[i] == "double" then 
 						functionBlock = functionBlock .. "lua_tonumber(L," .. i .. ")"
@@ -121,7 +121,7 @@ function writeBindingFunctions(classData)
 					
 					if i ~= #methodTable then functionBlock = functionBlock .. ", " end
 				end
-				functionBlock = functionBlock .. ");\nreturn 0;\n}\n\n"
+				functionBlock = functionBlock .. ");\n\treturn 0;\n}\n\n"
 			end
 		end
 	end
@@ -129,7 +129,13 @@ function writeBindingFunctions(classData)
 	return functionBlock
 end
 
-print(writeBindingFunctions(out))
+print(writeMethodCFunctions(out))
+
+function writeConnectMethod(classData){
+		
+	local bindingClassName = classData.classname .. "LuaInterface"
+	
+}
 
 --[[--Debug
 

@@ -13,7 +13,7 @@ class Entity{
   static void InitializeStatic();
 
   sf::Sprite Draw();
-  void Update();
+  void Update();//LUACALL
   
 
   void setPosition(const float& arga, const float& argb);//BIND
