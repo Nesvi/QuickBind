@@ -17,6 +17,13 @@ function split(str, pat)
    return t
 end
 
+function replaceDollar (str, replacement)
+
+	cad = string.gsub(str, "%$", replacement)
+	return cad
+
+end
+
 function readAll(file)
     local f = io.open(file, "rb")
     local content = f:read("*all")
@@ -131,11 +138,33 @@ end
 
 print(writeMethodCFunctions(out))
 
-function writeConnectMethod(classData){
-		
+function writeConnectMethod(classData)
+	--[[ Template
+	void EntityLuaInterface::defineCFunctions(){
+
+	  lua_register(L, "getX", LuaEntity_getX);
+
+	  lua_pushcfunction(L, LuaEntity_getY);
+	  lua_setglobal(L, "getY");
+
+	  lua_register(L, "setPosition", LuaEntity_setPosition);
+
+	  lua_register(L, "newCInstance", LuaEntity_newCInstance);
+
+	}
+	]]
 	local bindingClassName = classData.classname .. "LuaInterface"
 	
-}
+	local code = "void "..bindingClassName.."::defineCFunctions(){\n"
+	for methodName, methodTable in pairs(classData.methods) do
+		code = code .. "\tlua_register(L,\""..methodName.."\","..bindingClassName.."_"..methodName..");\n"
+	end
+	code = code .. "}\n"
+	return code
+end
+
+print(writeConnectMethod(out))
+
 
 --[[--Debug
 
