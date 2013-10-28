@@ -117,9 +117,9 @@ function writeMethodCFunctions(classData)
 	for methodName, methodTable in pairs(classData.methods) do
 		if methodTable.returnType == "void" then
 			if #methodTable == 0 then
-				functionBlock = functionBlock .. bindingClassName .. "_" .. methodName .. "(lua_State* L){\n\t" .. bindingClassName .. "::getInstance(L)->" .. methodName .. "();\n\treturn 0;\n}\n\n"
+				functionBlock = functionBlock .."int ".. bindingClassName .. "_" .. methodName .. "(lua_State* L){\n\t" .. bindingClassName .. "::getInstance(L)->" .. methodName .. "();\n\treturn 0;\n}\n\n"
 			else 
-				functionBlock = functionBlock .. bindingClassName .. "_" .. methodName .. "(lua_State* L){\n\t" .. bindingClassName .. "::getInstance(L)->" .. methodName .. "("
+				functionBlock = functionBlock .."int ".. bindingClassName .. "_" .. methodName .. "(lua_State* L){\n\t" .. bindingClassName .. "::getInstance(L)->" .. methodName .. "("
 				for i=1, #methodTable do					
 					if methodTable[i] == "float" or methodTable[i] == "int" or methodTable[i] == "double" then 
 						functionBlock = functionBlock .. "lua_tonumber(L," .. i .. ")"
