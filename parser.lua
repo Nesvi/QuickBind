@@ -69,7 +69,7 @@ function processArgs(input)
 			a,b, argtype = string.find(members[i],"%s*(%S-)$",b+1)
 		end
 		if b == nil then print "Error reading argument"; break; end
-
+		
 		output[order] = argtype
 		order = order + 1
 	end
@@ -82,7 +82,7 @@ function processMethods(input)
 	local b=0
 	local output = {}
 	
-	local vartypes = {"void","int","float","string","char","char*"}
+	local vartypes = {"void","int","float","string","char","char%*"}
 	for i=1, #vartypes do
 		b= 0
 		while true do
@@ -122,14 +122,95 @@ function writeMethodCFunctions(classData)
 				functionBlock = functionBlock .."int ".. bindingClassName .. "_" .. methodName .. "(lua_State* L){\n\t" .. bindingClassName .. "::getInstance(L)->" .. methodName .. "("
 				for i=1, #methodTable do					
 					if methodTable[i] == "float" or methodTable[i] == "int" or methodTable[i] == "double" then 
-						functionBlock = functionBlock .. "lua_tonumber(L," .. i .. ")"
-						
+						functionBlock = functionBlock .. "lua_tonumber(L," .. (i+1) .. ")"
 					end
 					
+					if methodTable[i] == "std::string" or methodTable[i] == "string" then
+						functionBlock = functionBlock .. "std::string(lua_tostring(L," .. (i+1) .. "))"
+					end
+				
+					if methodTable[i] == "char*" then
+						functionBlock = functionBlock .. "lua_tostring(L," .. (i+1) .. ")"
+					end
+				
 					if i ~= #methodTable then functionBlock = functionBlock .. ", " end
 				end
 				functionBlock = functionBlock .. ");\n\treturn 0;\n}\n\n"
 			end
+		elseif methodTable.returnType == "std::string" or methodTable.returnType == "string" then
+			functionBlock = functionBlock .."int ".. bindingClassName .. "_" .. methodName .. "(lua_State* L){\n\tlua_pushstring(L," .. bindingClassName .. "::getInstance(L)->" .. methodName .. "("
+			for i=1, #methodTable do					
+				if methodTable[i] == "float" or methodTable[i] == "int" or methodTable[i] == "double" then 
+					functionBlock = functionBlock .. "lua_tonumber(L," .. (i+1) .. ")"		
+				end
+				
+				if methodTable[i] == "std::string" or methodTable[i] == "string" then
+					functionBlock = functionBlock .. "std::string(lua_tostring(L," .. (i+1) .. "))"
+				end
+				
+				if methodTable[i] == "char*" then
+					functionBlock = functionBlock .. "lua_tostring(L," .. (i+1) .. ")"
+				end
+				
+				if i ~= #methodTable then functionBlock = functionBlock .. ", " end
+			end
+			functionBlock = functionBlock .. ").c_str());\n\treturn 1;\n}\n\n"
+		
+		elseif methodTable.returnType == "char*" then
+			functionBlock = functionBlock .."int ".. bindingClassName .. "_" .. methodName .. "(lua_State* L){\n\tlua_pushstring(L," .. bindingClassName .. "::getInstance(L)->" .. methodName .. "("
+			for i=1, #methodTable do					
+				if methodTable[i] == "float" or methodTable[i] == "int" or methodTable[i] == "double" then 
+					functionBlock = functionBlock .. "lua_tonumber(L," .. (i+1) .. ")"		
+				end
+				
+				if methodTable[i] == "std::string" or methodTable[i] == "string" then
+					functionBlock = functionBlock .. "std::string(lua_tostring(L," .. (i+1) .. "))"
+				end
+				
+				if methodTable[i] == "char*" then
+					functionBlock = functionBlock .. "lua_tostring(L," .. (i+1) .. ")"
+				end
+				
+				if i ~= #methodTable then functionBlock = functionBlock .. ", " end
+			end
+			functionBlock = functionBlock .. "));\n\treturn 1;\n}\n\n"
+			
+		elseif methodTable.returnType == "float" or methodTable.returnType == "int" or methodTable.returnType == "double" then
+			functionBlock = functionBlock .."int ".. bindingClassName .. "_" .. methodName .. "(lua_State* L){\n\tlua_pushnumber(L," .. bindingClassName .. "::getInstance(L)->" .. methodName .. "("
+			for i=1, #methodTable do					
+				if methodTable[i] == "float" or methodTable[i] == "int" or methodTable[i] == "double" then 
+					functionBlock = functionBlock .. "lua_tonumber(L," .. (i+1) .. ")"		
+				end
+				
+				if methodTable[i] == "std::string" or methodTable[i] == "string" then
+					functionBlock = functionBlock .. "std::string(lua_tostring(L," .. (i+1) .. "))"
+				end
+				
+				if methodTable[i] == "char*" then
+					functionBlock = functionBlock .. "lua_tostring(L," .. (i+1) .. ")"
+				end
+				
+				if i ~= #methodTable then functionBlock = functionBlock .. ", " end
+			end
+			functionBlock = functionBlock .. ").c_str());\n\treturn 1;\n}\n\n"
+		else
+			functionBlock = functionBlock .."int ".. bindingClassName .. "_" .. methodName .. "(lua_State* L){\n\tlua_pushlightuserdata(L," .. bindingClassName .. "::getInstance(L)->" .. methodName .. "("
+			for i=1, #methodTable do					
+				if methodTable[i] == "float" or methodTable[i] == "int" or methodTable[i] == "double" then 
+					functionBlock = functionBlock .. "lua_tonumber(L," .. (i+1) .. ")"		
+				end
+				
+				if methodTable[i] == "std::string" or methodTable[i] == "string" then
+					functionBlock = functionBlock .. "std::string(lua_tostring(L," .. (i+1) .. "))"
+				end
+				
+				if methodTable[i] == "char*" then
+					functionBlock = functionBlock .. "lua_tostring(L," .. (i+1) .. ")"
+				end
+				
+				if i ~= #methodTable then functionBlock = functionBlock .. ", " end
+			end
+			functionBlock = functionBlock .. "));\n\treturn 1;\n}\n\n"
 		end
 	end
 
@@ -138,32 +219,28 @@ end
 
 print(writeMethodCFunctions(out))
 
-function writeConnectMethod(classData)
-	--[[ Template
-	void EntityLuaInterface::defineCFunctions(){
+function writeLoadMethod(classData)
 
-	  lua_register(L, "getX", LuaEntity_getX);
-
-	  lua_pushcfunction(L, LuaEntity_getY);
-	  lua_setglobal(L, "getY");
-
-	  lua_register(L, "setPosition", LuaEntity_setPosition);
-
-	  lua_register(L, "newCInstance", LuaEntity_newCInstance);
-
-	}
-	]]
 	local bindingClassName = classData.classname .. "LuaInterface"
 	
-	local code = "void "..bindingClassName.."::defineCFunctions(){\n"
+	local code = "void "..bindingClassName.."::load(lua_State* L){\n"
 	for methodName, methodTable in pairs(classData.methods) do
-		code = code .. "\tlua_register(L,\""..methodName.."\","..bindingClassName.."_"..methodName..");\n"
+		code = code .. "\tlua_register(L,\"QB_"..methodName.."\","..bindingClassName.."_"..methodName..");\n"
 	end
 	code = code .. "}\n"
 	return code
 end
 
-print(writeConnectMethod(out))
+print(writeLoadMethod(out))
+
+function writeGetInstanceMethod(classData)
+
+	local bindingClassName = classData.classname .. "LuaInterface"
+	local code = classData.classname.."* "..bindingClassName.."::getInstance(lua_State* L){\n\treturn reinterpret_cast<"..classData.classname.."*>(lua_touserdata(L,1));\n}"
+	return code;
+end
+
+print(writeGetInstanceMethod(out))
 
 
 --[[--Debug

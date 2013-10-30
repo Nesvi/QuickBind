@@ -20,6 +20,7 @@ class Entity{
   float getX();//BIND
   float getY();
   void voidfunc();//BIND
+  char* getText();//BIND
 };
 
 
