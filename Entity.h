@@ -13,14 +13,15 @@ class Entity{
   static void InitializeStatic();
 
   sf::Sprite Draw();
-  void Update();//LUACALL
+  void Update();
   
 
-  void setPosition(const float& arga, const float& argb);//BIND
+  void setPosition(const float& arga, const float& argb, const Buffer* a);//BIND
   float getX();//BIND
   float getY();
   void voidfunc();//BIND
   char* getText();//BIND
+  Buffer* getBuffer(SomeClass*);//BIND
 };
 
 
