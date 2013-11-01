@@ -54,7 +54,7 @@ function processArgs(input)
 	local b = 0
 	local c = 0
 	local order = 1
-	local vartypes = {"void","int","float","string","char","char*"}
+	local vartypes = {"void","int","float","string","std::string","char","char*"}
 	
 	--Clean useless symbols for this work
 	input = string.gsub(input, "const","")
@@ -82,7 +82,7 @@ end
 complexTypes = {}
 function checkType(typ)
 	if typ ~= nil then
-		local vartypes = {"void","int","float","string","char","char*"}
+		local vartypes = {"void","int","float","string","std::string","char","char*"}
 		local found = false
 		for i=1, #vartypes do
 			if vartypes[i] == typ then 
@@ -114,7 +114,7 @@ function processMethods(input)
 	--for i=1, #vartypes do
 		b= 0
 		while true do
-			a,b,vartype,method,args = string.find(input,(--[[vartypes[i]..]]"\n%s*([%a%*]+)".."%s+([^;]-)%(([^;]-)%)[;]//BIND"),b+1)
+			a,b,vartype,method,args = string.find(input,(--[[vartypes[i]..]]"\n%s*([%a%*:]+)".."%s+([^;]-)%(([^;]-)%)[;]//BIND"),b+1)
 			
 			checkType(vartype)
 			
@@ -219,7 +219,7 @@ function writeMethodCFunctions(classData)
 				
 				if i ~= #methodTable then functionBlock = functionBlock .. ", " end
 			end
-			functionBlock = functionBlock .. ").c_str());\n\treturn 1;\n}\n\n"
+			functionBlock = functionBlock .. "));\n\treturn 1;\n}\n\n"
 		else
 			functionBlock = functionBlock .."int ".. bindingClassName .. "_" .. methodName .. "(lua_State* L){\n\tlua_pushlightuserdata(L," .. bindingClassName .. "::getInstance(L)->" .. methodName .. "("
 			for i=1, #methodTable do					
@@ -239,19 +239,23 @@ function writeMethodCFunctions(classData)
 			functionBlock = functionBlock .. "));\n\treturn 1;\n}\n\n"
 		end
 	end
-
+	
+	functionBlock = functionBlock.."int ".. bindingClassName .. "_newUserData(lua_State* L){\n\tlua_pushlightuserdata(L,new "..classData.classname.."());\n\t return 1;\n}\n"
+	
 	return functionBlock
 end
 print(writeMethodCFunctions(out))
 
 function writeLoadMethod(classData)
 
-	local bindingClassName = classData.classname .. "LuaQB"
+	local bindingClassName = classData.classname
 	
-	local code = "void "..bindingClassName.."::load(lua_State* L){\n"
+	local code = "void "..bindingClassName.."LuaQB::load(lua_State* L){\n"
 	for methodName, methodTable in pairs(classData.methods) do
-		code = code .. "\tlua_register(L,\"QB_"..methodName.."\","..bindingClassName.."_"..methodName..");\n"
+		code = code .. "\tlua_register(L,\"QB"..bindingClassName.."_"..methodName.."\","..bindingClassName.."LuaQB_"..methodName..");\n"
 	end
+	code = code.."\tlua_register(L,\"QB"..bindingClassName.."_newUserData\","..bindingClassName.."LuaQB_newUserData);\n"
+	code = code.."\tluaL_dofile(L,\""..classData.classname..".lua\");\n"
 	code = code .. "}\n\n"
 	return code
 end
@@ -268,7 +272,7 @@ print(writeGetInstanceMethod(out))
 function writeInclude(classData)
 	
 	local bindingClassName = classData.classname .. "LuaQB"
-	local code = "extern \"C\" {\n#include <stdio.h>\n#include <stdlib.h>\n#include <lua.h>\n#include <lauxlib.h>\n#include <lualib.h>\n}\n\n"
+	local code = ""--"extern \"C\" {\n#include <stdio.h>\n#include <stdlib.h>\n#include <lua.h>\n#include <lauxlib.h>\n#include <lualib.h>\n}\n\n"
 	code = code .."#include \""..bindingClassName..".h\"\n"
 	for i=1, #complexTypes do
 		local myType = string.gsub(complexTypes[i],"%*","")
@@ -293,12 +297,14 @@ end
 
 function writeHeaderFile(classData)
 	local bindingClassName = classData.classname .. "LuaQB"
-	local code = "#ifndef _"..bindingClassName.."\n#define _"..bindingClassName.."\n\n#include \""..classData.classname..".h\"\n\nclass "..bindingClassName.."{\n\tpublic:\n"
+	local code = "#ifndef _"..bindingClassName.."\n#define _"..bindingClassName.."\n"
+	code = code.."extern \"C\" {\n#include <stdio.h>\n#include <stdlib.h>\n#include <lua.h>\n#include <lauxlib.h>\n#include <lualib.h>\n}\n\n"
+	code = code.."\n\n#include \""..classData.classname..".h\"\n\nclass "..bindingClassName.."{\n\tpublic:\n"
 	
-	code = code .."\t\tstatic int getInstance(lua_State* L);\n"
-	code = code .."\t\tstatic int load(lua_State* L);\n"
+	code = code .."\t\tstatic "..classData.classname.."* getInstance(lua_State* L);\n"
+	code = code .."\t\tstatic void load(lua_State* L);\n"
 	
-	code = code.."}\n#endif"
+	code = code.."};\n#endif"
 	
 	local f,err = io.open((bindingClassName..".h"),"w")
 	if not f then return print(err) end
@@ -307,8 +313,44 @@ function writeHeaderFile(classData)
 
 end
 
+function writeLuaFile(classData)
+
+	local bindingClassName = classData.classname
+	local code = ""
+	code = code.."class.new \""..classData.classname.."\"\n\n"
+	
+	code = code .."function "..classData.classname..":initialize()\n\tself.C_userdata=QB"..bindingClassName.."_newUserData()\nend\n"
+	for methodName, methodTable in pairs(classData.methods) do
+		code = code.."function "..classData.classname..":"..methodName.."("		
+		for i=1,#methodTable do
+			code = code.."arg"..(i)
+			if i ~= #methodTable then
+				code = code..","
+			end
+		end
+		code = code .. ")\n\treturn QB"..bindingClassName.."_"..methodName.."(self.C_userdata"
+		if #methodTable >= 1 then code = code .. ","; end
+		for i=1,#methodTable do
+			code = code.."arg"..(i)
+			if i ~= #methodTable then
+				code = code..","
+			end
+		end
+		code = code .. ")\nend\n"
+	end
+	
+	local f,err = io.open((classData.classname..".lua"),"w")
+	if not f then return print(err) end
+	f:write(code)
+	f:close()
+	--code = code..
+	--code = code..
+	--code = code..
+end
+
 writeCppFile(out)
 writeHeaderFile(out)
+writeLuaFile(out)
 --[[--Debug
 
 function show(asdf,times)
