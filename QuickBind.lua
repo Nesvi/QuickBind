@@ -54,7 +54,7 @@ function processArgs(input)
 	local b = 0
 	local c = 0
 	local order = 1
-	local vartypes = {"void","int","float","string","std::string","char","char*"}
+	local vartypes = {"void","int","float","string","std::string","char","char*","bool"}
 	
 	--Clean useless symbols for this work
 	input = string.gsub(input, "const","")
@@ -82,7 +82,7 @@ end
 complexTypes = {}
 function checkType(typ)
 	if typ ~= nil then
-		local vartypes = {"void","int","float","string","std::string","char","char*"}
+		local vartypes = {"void","int","float","string","std::string","char","char*","bool"}
 		local found = false
 		for i=1, #vartypes do
 			if vartypes[i] == typ then 
@@ -158,6 +158,8 @@ function writeMethodCFunctions(classData)
 						functionBlock = functionBlock .. "std::string(lua_tostring(L," .. (i+1) .. "))"
 					elseif methodTable[i] == "char*" then
 						functionBlock = functionBlock .. "lua_tostring(L," .. (i+1) .. ")"
+					elseif methodTable[i] == "bool" then
+						functionBlock = functionBlock .. "lua_toboolean(L," .. (i+1) .. ")"
 					else						
 						functionBlock = functionBlock .. "reinterpret_cast<"..methodTable[i]..">(lua_touserdata(L,"..(i+1).."))"
 						checkType(methodTable[i])
@@ -176,6 +178,8 @@ function writeMethodCFunctions(classData)
 					functionBlock = functionBlock .. "std::string(lua_tostring(L," .. (i+1) .. "))"
 				elseif methodTable[i] == "char*" then
 					functionBlock = functionBlock .. "lua_tostring(L," .. (i+1) .. ")"
+				elseif methodTable[i] == "bool" then
+					functionBlock = functionBlock .. "lua_toboolean(L," .. (i+1) .. ")"
 				else
 					functionBlock = functionBlock .. "reinterpret_cast<"..methodTable[i]..">(lua_touserdata(L,"..(i+1).."))"
 					checkType(methodTable[i])
@@ -194,6 +198,8 @@ function writeMethodCFunctions(classData)
 					functionBlock = functionBlock .. "std::string(lua_tostring(L," .. (i+1) .. "))"
 				elseif methodTable[i] == "char*" then
 					functionBlock = functionBlock .. "lua_tostring(L," .. (i+1) .. ")"
+				elseif methodTable[i] == "bool" then
+					functionBlock = functionBlock .. "lua_toboolean(L," .. (i+1) .. ")"
 				else
 					functionBlock = functionBlock .. "reinterpret_cast<"..methodTable[i]..">(lua_touserdata(L,"..(i+1).."))"
 					checkType(methodTable[i])
@@ -212,6 +218,8 @@ function writeMethodCFunctions(classData)
 					functionBlock = functionBlock .. "std::string(lua_tostring(L," .. (i+1) .. "))"
 				elseif methodTable[i] == "char*" then
 					functionBlock = functionBlock .. "lua_tostring(L," .. (i+1) .. ")"
+				elseif methodTable[i] == "bool" then
+					functionBlock = functionBlock .. "lua_toboolean(L," .. (i+1) .. ")"
 				else
 					functionBlock = functionBlock .. "reinterpret_cast<"..methodTable[i]..">(lua_touserdata(L,"..(i+1).."))"
 					checkType(methodTable[i])
@@ -220,6 +228,26 @@ function writeMethodCFunctions(classData)
 				if i ~= #methodTable then functionBlock = functionBlock .. ", " end
 			end
 			functionBlock = functionBlock .. "));\n\treturn 1;\n}\n\n"
+		elseif methodTable.returnType == "bool" then
+			functionBlock = functionBlock .."int ".. bindingClassName .. "_" .. methodName .. "(lua_State* L){\n\tlua_pushboolean(L," .. bindingClassName .. "::getInstance(L)->" .. methodName .. "("
+			for i=1, #methodTable do					
+				if methodTable[i] == "float" or methodTable[i] == "int" or methodTable[i] == "double" then 
+					functionBlock = functionBlock .. "lua_tonumber(L," .. (i+1) .. ")"		
+				elseif methodTable[i] == "std::string" or methodTable[i] == "string" then
+					functionBlock = functionBlock .. "std::string(lua_tostring(L," .. (i+1) .. "))"
+				elseif methodTable[i] == "char*" then
+					functionBlock = functionBlock .. "lua_tostring(L," .. (i+1) .. ")"
+				elseif methodTable[i] == "bool" then
+					functionBlock = functionBlock .. "lua_toboolean(L," .. (i+1) .. ")"
+				else
+					functionBlock = functionBlock .. "reinterpret_cast<"..methodTable[i]..">(lua_touserdata(L,"..(i+1).."))"
+					checkType(methodTable[i])
+				end
+				
+				if i ~= #methodTable then functionBlock = functionBlock .. ", " end
+			end
+			functionBlock = functionBlock .. "));\n\treturn 1;\n}\n\n"
+			
 		else
 			functionBlock = functionBlock .."int ".. bindingClassName .. "_" .. methodName .. "(lua_State* L){\n\tlua_pushlightuserdata(L," .. bindingClassName .. "::getInstance(L)->" .. methodName .. "("
 			for i=1, #methodTable do					
@@ -229,6 +257,8 @@ function writeMethodCFunctions(classData)
 					functionBlock = functionBlock .. "std::string(lua_tostring(L," .. (i+1) .. "))"
 				elseif methodTable[i] == "char*" then
 					functionBlock = functionBlock .. "lua_tostring(L," .. (i+1) .. ")"
+				elseif methodTable[i] == "bool" then
+					functionBlock = functionBlock .. "lua_toboolean(L," .. (i+1) .. ")"
 				else
 					functionBlock = functionBlock .. "reinterpret_cast<"..methodTable[i]..">(lua_touserdata(L,"..(i+1).."))"
 					checkType(methodTable[i])
